@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Prompt Fu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Titan+One&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #2b2350; --cream: #fff8ec; --lav: #a6a8e8; --orange: #ff8a3d; --pink: #ff7aa8; --mint: #7fd8a6; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #8fc7a0; font-family: Fredoka, system-ui, sans-serif; color: var(--ink); }
+  #c { display: block; width: 100vw; height: 100vh; }
+  .roster canvas { width: 60px; height: 60px; }
+  .hud { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; pointer-events: none; }
+  .pcard { display: flex; align-items: center; gap: 8px; background: var(--cream); border-radius: 18px; padding: 6px 14px 6px 6px; box-shadow: 0 5px 0 rgba(43, 35, 80, .25); font-weight: 700; transition: transform .2s; }
+  .pcard.out { opacity: .45; transform: scale(.92); }
+  .pcard canvas { width: 40px; height: 40px; }
+  .pips { display: flex; gap: 3px; margin-top: 2px; }
+  .pip { width: 9px; height: 9px; border-radius: 50%; background: #ddd6ee; }
+  .pip.on { background: var(--orange); }
+  .seedbox { position: fixed; bottom: 14px; left: 14px; display: flex; gap: 8px; align-items: center; background: var(--cream); padding: 8px 10px; border-radius: 16px; box-shadow: 0 5px 0 rgba(43, 35, 80, .25); }
+  .seedbox input { font: 700 15px Fredoka; border: 2px solid var(--lav); border-radius: 10px; padding: 6px 8px; width: 120px; color: var(--ink); }
+  button { font: 700 15px Fredoka; border: 0; border-radius: 12px; padding: 8px 12px; cursor: pointer; background: var(--lav); color: #fff; box-shadow: 0 4px 0 #7c7ec9; }
+  button:active { transform: translateY(3px); box-shadow: 0 1px 0 #7c7ec9; }
+  .keys { position: fixed; bottom: 14px; right: 14px; background: var(--cream); padding: 8px 12px; border-radius: 16px; font-size: 13px; box-shadow: 0 5px 0 rgba(43, 35, 80, .25); }
+  .banner { position: fixed; inset: 0; display: grid; place-items: center; pointer-events: none; }
+  .banner .t { font: 400 clamp(48px, 9vw, 120px) "Titan One"; color: #fff; -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill; text-shadow: 0 8px 0 var(--ink); transform: scale(0); transition: transform .35s cubic-bezier(.2, 1.6, .4, 1); text-align: center; line-height: 1; }
+  .banner .t small { display: block; font-size: .35em; margin-top: 10px; }
+  .banner.show .t { transform: scale(1) rotate(-3deg); }
+  .title { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(43, 35, 80, .35); backdrop-filter: blur(3px); }
+  .title .card { background: var(--cream); border-radius: 32px; padding: 28px 36px; text-align: center; box-shadow: 0 10px 0 rgba(43, 35, 80, .3); max-width: 560px; }
+  .title h1 { margin: 0; font: 400 72px/1 "Titan One"; color: var(--orange); -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 6px 0 var(--ink); }
+  .title p { margin: 10px 0 18px; font-size: 18px; }
+  .title .roster { display: flex; justify-content: center; gap: 6px; margin-bottom: 18px; }
+  .title button { font-size: 22px; padding: 14px 28px; background: var(--orange); box-shadow: 0 6px 0 #c4602a; }
+  .steps { display: flex; justify-content: center; gap: 8px; margin-bottom: 14px; }
+  .steps span { font-weight: 700; font-size: 13px; padding: 4px 10px; border-radius: 99px; background: #eee7f7; color: #8a84a8; }
+  .steps span.on { background: var(--orange); color: #fff; }
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0 6px; }
+  .choice { background: #fff; border: 3px solid #e6e0f2; border-radius: 22px; padding: 18px 14px; cursor: pointer; text-align: center; transition: transform .1s, border-color .1s; }
+  .choice:hover { transform: translateY(-3px) rotate(-.5deg); border-color: var(--orange); }
+  .choice .e { font-size: 40px; display: block; }
+  .choice b { font: 400 22px "Titan One"; display: block; margin: 6px 0 2px; }
+  .choice small { color: #6b6488; }
+  .prompt { display: flex; gap: 8px; margin-top: 12px; }
+  .prompt input { flex: 1; font: 600 18px Fredoka; border: 3px solid var(--lav); border-radius: 14px; padding: 12px 14px; color: var(--ink); }
+  .prompt button, .go { font-size: 18px; padding: 12px 18px; background: var(--orange); box-shadow: 0 5px 0 #c4602a; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 10px; }
+  .chips button { background: #eee7f7; color: var(--ink); box-shadow: none; font-size: 13px; padding: 6px 10px; }
+  .preview { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 12px 0; min-height: 110px; }
+  .preview canvas { width: 110px; height: 110px; }
+  .busy { color: #6b6488; font-weight: 700; animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .4; } }
+  .row { display: flex; gap: 10px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+  .ghostbtn { background: transparent; color: var(--ink); box-shadow: none; text-decoration: underline; }
+  .qrbox { margin-top: 12px; font-size: 14px; color: #6b6488; }
+  .qrbox canvas, .qrbox img { width: 120px; height: 120px; image-rendering: pixelated; }
+  .vsbig { position: fixed; inset: 0; display: none; grid-template-columns: 1fr auto 1fr; align-items: center; pointer-events: none; }
+  .vsbig.show { display: grid; }
+  .vsbig .side { height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; font: 400 clamp(28px, 4vw, 54px) "Titan One"; color: #fff; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; }
+  .vsbig .side.l { background: linear-gradient(115deg, #ff8a3d, #ff7aa8); clip-path: polygon(0 0, 100% 0, 86% 100%, 0 100%); animation: inL .4s cubic-bezier(.2,1.4,.4,1); }
+  .vsbig .side.r { background: linear-gradient(245deg, #7d7fca, #7fd8ff); clip-path: polygon(14% 0, 100% 0, 100% 100%, 0 100%); animation: inR .4s cubic-bezier(.2,1.4,.4,1); }
+  .vsbig .side canvas { width: 160px; height: 160px; }
+  .vsbig .side small { font-size: .45em; }
+  .vsbadge { font: 400 clamp(70px, 11vw, 150px) "Titan One"; color: #ffd23f; -webkit-text-stroke: 5px var(--ink); paint-order: stroke fill; text-shadow: 0 8px 0 var(--ink); margin: 0 -50px; z-index: 2; animation: vsp .7s cubic-bezier(.2,1.8,.4,1); }
+  @keyframes inL { from { transform: translateX(-100%); } } @keyframes inR { from { transform: translateX(100%); } } @keyframes vsp { from { transform: scale(3) rotate(-20deg); opacity: 0; } }
+  .joinqr { position: fixed; right: 14px; bottom: 64px; background: var(--cream); border-radius: 16px; padding: 8px; text-align: center; font-weight: 700; font-size: 13px; box-shadow: 0 5px 0 rgba(43,35,80,.25); }
+  .joinqr:empty { display: none; }
+  .joinqr canvas, .joinqr img { width: 110px !important; height: 110px !important; display: block; margin: 0 auto 4px; }
+  .hatch { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 10px 0; }
+  .hatch .egg { font-size: 54px; line-height: 1; animation: eggwob .5s ease-in-out infinite; transform-origin: 50% 90%; filter: drop-shadow(0 6px 0 rgba(43,35,80,.2)); }
+  .hatch .egg.fast { animation-duration: .18s; }
+  @keyframes eggwob { 0%, 100% { transform: rotate(-10deg) scale(1, 1); } 50% { transform: rotate(10deg) scale(1.06, .94); } }
+  .hatch .bar { width: 260px; height: 16px; border-radius: 99px; background: #eee7f7; border: 3px solid var(--ink); overflow: hidden; }
+  .hatch .bar i { display: block; height: 100%; width: 0; background: repeating-linear-gradient(-45deg, #ff8a3d 0 12px, #ffb066 12px 24px); background-size: 34px 34px; animation: stripes .6s linear infinite; transition: width .25s; }
+  @keyframes stripes { to { background-position: 34px 0; } }
+  .hatch .msg { font-weight: 700; color: #6b6488; min-height: 22px; }
+  .hatch .done { animation: pop .4s cubic-bezier(.2,1.8,.4,1); }
+  @keyframes pop { from { transform: scale(.3); } }
+  #botpick button { background: #eee7f7; color: var(--ink); box-shadow: 0 3px 0 #cfc6e6; font-size: 15px; padding: 8px 14px; }
+  #botpick button.on { background: var(--orange); color: #fff; box-shadow: 0 3px 0 #c4602a; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud" id="hud"></div>
+<div class="seedbox"><span>🌱 Arena</span><input id="seed" value="KOPI-42" spellcheck="false"><button id="regen">Generate</button><button id="rand">🎲</button></div>
+<div class="keys"><b>P1</b> WASD move · <b>F</b> throw · <b>G</b> dash &nbsp; <b>P2</b> arrows · <b>K</b> throw · <b>L</b> dash</div>
+<div class="joinqr" id="joinqr"></div>
+<div class="banner" id="banner"><div class="t" id="bannerT"></div></div>
+<div class="title" id="title"><div class="card" id="flow"></div></div>
+<div class="vsbig" id="vsbig"><div class="side l" id="vsL"></div><div class="vsbadge">VS</div><div class="side r" id="vsR"></div></div>
+
+<script src="js/core.js"></script>
+<script src="js/arena.js"></script>
+<script src="js/characters.js"></script>
+<script src="js/net.js"></script>
+<script src="js/awards.js"></script>
+<script>
+// ---------- Game state ----------
+const cv = document.getElementById('c'), g = cv.getContext('2d');
+let fighters = [], rangs = [], parts = [], powers = [], shake = 0, hitstop = 0, state = 'title', round = 0, view = { s: 1, ox: 0, oy: 0 };
+const keys = {};
+let slowT = 0, slowAcc = 0, flash = 0, zoomP = 0, lastInput = performance.now(), attract = false, attractSave = null;
+addEventListener('keydown', e => { keys[e.code] = true; if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault(); });
+addEventListener('keyup', e => keys[e.code] = false);
+const CONTROLS = [{ up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', throw: 'KeyF', dash: 'KeyG' }, { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', throw: 'KeyK', dash: 'KeyL' }];
+
+function makeFighter(spec, i, human) {
+  return { spec, i, human, x: 0, y: 0, vx: 0, vy: 0, dir: { x: 1, y: 0 }, alive: true, has: true, dashT: 0, dashCd: 0, shield: false, multi: 0, fire: 0, wins: 0, step: 0, ai: { t: 0, path: null } };
+}
+// Slots: P1 (keyboard) + 3 seats. A seat is a phone/P2 human, a bot (up to BOTS), or empty. Max 4 fighters.
+let BOTS = 3;
+function applySlots() {
+  let bots = 0;
+  fighters.forEach((f, i) => { if (i === 0 || f.net || f.human === 1) { f.empty = false; return; } f.empty = bots >= BOTS; if (!f.empty) bots++; if (f.empty) f.alive = false; });
+  hud();
+}
+function resetRound() {
+  rangs = []; parts = []; powers = []; applySlots();
+  fighters.forEach((f, i) => { const s = spawns[i]; Object.assign(f, { x: s.x, y: s.y, vx: 0, vy: 0, alive: !f.empty, has: true, dashT: 0, dashCd: 0, shield: false, multi: 0, fire: 0 }); });
+  powerTimer = 3;
+  hud();
+}
+
+// ---------- Physics helpers ----------
+const solid = (x, y) => { const cx = Math.floor(x / T), cy = Math.floor(y / T); return cx < 0 || cy < 0 || cx >= COLS || cy >= ROWS || (grid[cy][cx] !== 0 && grid[cy][cx] !== 6); };
+function moveCircle(o, r) {
+  o.x += o.vx; if (solid(o.x + Math.sign(o.vx) * r, o.y - r * .6) || solid(o.x + Math.sign(o.vx) * r, o.y + r * .6)) { o.x -= o.vx; o.vx = 0; }
+  o.y += o.vy; if (solid(o.x - r * .6, o.y + Math.sign(o.vy) * r) || solid(o.x + r * .6, o.y + Math.sign(o.vy) * r)) { o.y -= o.vy; o.vy = 0; }
+}
+function los(a, b) { const d = Math.hypot(b.x - a.x, b.y - a.y), n = Math.ceil(d / 12); for (let k = 1; k < n; k++) if (solid(a.x + (b.x - a.x) * k / n, a.y + (b.y - a.y) * k / n)) return false; return true; }
+
+// ---------- Audio ----------
+let AC; function blip(f = 440, d = .08, type = 'square', v = .06) { try { AC = AC || new AudioContext(); const o = AC.createOscillator(), gn = AC.createGain(); o.type = type; o.frequency.value = f * (0.94 + Math.random() * .12); gn.gain.value = v; gn.gain.exponentialRampToValueAtTime(.0001, AC.currentTime + d); o.connect(gn).connect(AC.destination); o.start(); o.stop(AC.currentTime + d); } catch (e) {} }
+
+// ---------- Actions ----------
+function throwRang(f) {
+  if (!f.alive || !f.has) return;
+  PF.stat(f, 'throws');
+  const n = f.multi > 0 ? 3 : 1;
+  for (let k = 0; k < n; k++) {
+    const a = Math.atan2(f.dir.y, f.dir.x) + (k - (n - 1) / 2) * .35;
+    rangs.push({ owner: f, x: f.x + Math.cos(a) * 18, y: f.y - 14 + Math.sin(a) * 18, vx: Math.cos(a) * 11, vy: Math.sin(a) * 11, t: 0, back: false, rot: 0, fire: f.fire > 0, main: k === (n - 1) / 2 || n === 1 });
+  }
+  if (f.multi > 0) f.multi--; f.has = false; blip(660, .07, 'triangle'); f.squash = 1;
+}
+function dash(f) { if (!f.alive || f.dashCd > 0) return; PF.stat(f, 'dashes'); f.dashT = .16; f.dashCd = .9; blip(220, .1, 'sine', .08); for (let k = 0; k < 6; k++) parts.push({ x: f.x, y: f.y, vx: (Math.random() - .5) * 3, vy: (Math.random() - .5) * 3, life: .4, c: '#fff8ec', r: 5 }); }
+function ko(f, by) {
+  if (f.shield) { f.shield = false; burst(f.x, f.y - 20, '#7fd8ff', 14); blip(880, .12, 'sine'); return; }
+  f.alive = false; PF.stat(f, 'deaths'); if (by) PF.stat(by, 'bonks'); if (f.net && window.NET) NET.send(f.net, { type: 'state', msg: 'Bonked! Next round soon', hit: true, ko: true, respawnIn: Math.max(1, Math.round(roundOverT > 0 ? roundOverT : 3)) }); shake = 14; hitstop = .08; if (state === 'play' && fighters.filter(x => !x.empty).length >= 2 && fighters.filter(x => x.alive).length <= 1) { slowT = .6; flash = .9; zoomP = 1; } blip(120, .25, 'sawtooth', .1); blip(90, .3, 'square', .06);
+  burst(f.x, f.y - 20, f.spec.body.color, 24); burst(f.x, f.y - 20, '#fff', 10);
+  hud();
+}
+function burst(x, y, c, n) { for (let k = 0; k < n; k++) { const a = Math.random() * 7, v = 2 + Math.random() * 6; parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 2, life: .6 + Math.random() * .4, c, r: 3 + Math.random() * 5, grav: .25 }); } }
+
+// ---------- Bots ----------
+function bfs(sx, sy, tx, ty) {
+  const W = COLS, prev = new Int32Array(COLS * ROWS).fill(-1), q = [sy * W + sx]; prev[sy * W + sx] = sy * W + sx;
+  while (q.length) { const c = q.shift(); if (c === ty * W + tx) break; const x = c % W, y = (c / W) | 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const a = x + dx, b = y + dy; if (a < 0 || b < 0 || a >= COLS || b >= ROWS || (grid[b][a] && grid[b][a] !== 6) || prev[b * W + a] >= 0) continue; prev[b * W + a] = c; q.push(b * W + a); } }
+  if (prev[ty * W + tx] < 0) return null; const path = []; let c = ty * W + tx; while (c !== sy * W + sx) { path.unshift(c); c = prev[c]; } return path;
+}
+function botThink(f, dt) {
+  const foes = fighters.filter(o => o !== f && o.alive && (!inBush(o.x, o.y) || Math.hypot(o.x - f.x, o.y - f.y) < 70)); if (!foes.length) { f.ai.wt = (f.ai.wt || 0) - dt; if (f.ai.wt <= 0) { f.ai.wt = 1; const a = Math.random() * 7; f.ai.wd = { x: Math.cos(a), y: Math.sin(a) }; } return f.ai.wd || { x: 0, y: 0 }; } // hidden foes are ignored beyond 70px
+  const tgt = f.has ? foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y))[0] : (rangs.find(r => r.owner === f) || foes[0]);
+  f.ai.t -= dt;
+  f.ai.cool = (f.ai.cool || 0) - dt; if (f.has && f.ai.cool <= 0 && tgt.alive !== undefined && los(f, tgt) && Math.hypot(tgt.x - f.x, tgt.y - f.y) < 260 && Math.random() < .015) { const err = (Math.random() - .5) * .9, a = Math.atan2(tgt.y - f.y, tgt.x - f.x) + err; f.dir = { x: Math.cos(a), y: Math.sin(a) }; f.ai.cool = 1.2 + Math.random(); throwRang(f); } // dumber: slower, shorter range, wobbly aim
+  const danger = rangs.find(r => r.owner !== f && Math.hypot(r.x - f.x, r.y - f.y) < 90); if (danger && Math.random() < .025) dash(f);
+  if (f.stuck > .35) { f.ai.wander = { x: Math.random() - .5, y: Math.random() - .5, t: .6 }; f.stuck = 0; f.ai.t = 0; }
+  if (f.ai.wander && f.ai.wander.t > 0) { f.ai.wander.t -= dt; return f.ai.wander; }
+  if (f.ai.t <= 0) { f.ai.t = .4; f.ai.path = bfs(Math.floor(f.x / T), Math.floor(f.y / T), Math.floor(tgt.x / T), Math.floor(tgt.y / T)); }
+  const p = f.ai.path; if (!p || !p.length) return { x: tgt.x - f.x, y: tgt.y - f.y };
+  const nx = (p[0] % COLS + .5) * T, ny = ((p[0] / COLS | 0) + .5) * T; if (Math.hypot(nx - f.x, ny - f.y) < 10) p.shift();
+  const dd = Math.hypot(tgt.x - f.x, tgt.y - f.y); f.ai.keepT = (f.ai.keepT || 0) - dt;
+  if (f.ai.keepT <= 0) { f.ai.keep = f.has && dd < 140 ? -1 : 1; f.ai.keepT = .9; } const keep = f.ai.keep; // sticky decision, no back-and-forth
+  return { x: (nx - f.x) * keep, y: (ny - f.y) * keep };
+}
+
+// ---------- Update ----------
+let powerTimer = 3, last = performance.now(), roundOverT = 0;
+function update(dt) {
+  if (hitstop > 0) { hitstop -= dt; return; }
+  fighters.forEach(f => {
+    if (!f.alive) return;
+    let ix = 0, iy = 0;
+    if (f.net) { const n = netIn[f.net] || {}; ix = n.mx || 0; iy = n.my || 0; if (n.throw && !f.lt) throwRang(f); if (n.dash && !f.ld) dash(f); f.lt = n.throw; f.ld = n.dash; }
+    else if (f.human !== undefined && f.human !== null) { const c = CONTROLS[f.human]; ix = (keys[c.right] ? 1 : 0) - (keys[c.left] ? 1 : 0); iy = (keys[c.down] ? 1 : 0) - (keys[c.up] ? 1 : 0); if (keys[c.throw]) { throwRang(f); keys[c.throw] = false; } if (keys[c.dash]) { dash(f); keys[c.dash] = false; } }
+    else { const v = botThink(f, dt); ix = v.x; iy = v.y; }
+    const m = Math.hypot(ix, iy); if (m > 0) { ix /= m; iy /= m; f.dir = { x: ix, y: iy }; f.step += dt * 14; }
+    const bot = !f.net && (f.human === null || f.human === undefined), sp = f.dashT > 0 ? 9 : (bot ? 2.8 : 3.4); f.dashT -= dt; f.dashCd -= dt; f.fire -= dt;
+    const acc = f.net ? .55 : .3; f.vx += (ix * sp - f.vx) * acc; f.vy += (iy * sp - f.vy) * acc;
+    if (f.dashT > 0) { f.vx = f.dir.x * sp; f.vy = f.dir.y * sp; }
+    const ox = f.x, oy = f.y; moveCircle(f, 13);
+    if (m > 0 && Math.hypot(f.x - ox, f.y - oy) < .3) { const cx = (Math.floor(f.x / T) + .5) * T, cy = (Math.floor(f.y / T) + .5) * T; f.x += Math.sign(cx - f.x) * 1.2; f.y += Math.sign(cy - f.y) * 1.2; f.stuck = (f.stuck || 0) + dt; } else f.stuck = 0; if (Math.hypot(f.vx, f.vy) > .8) rustleAt(f.x, f.y);
+    if (Math.hypot(f.vx, f.vy) > 1.8 && Math.random() < .3 && parts.length < 300) parts.push({ x: f.x + (Math.random() - .5) * 10, y: f.y + 2, vx: -f.vx * .15, vy: -.25, life: .35, c: '#f4ead2', r: 2 + Math.random() * 2 });
+    f.squash = (f.squash || 0) * .85; PF.bush(f, dt);
+    powers = powers.filter(p => { if (Math.hypot(p.x - f.x, p.y - f.y) < 28) { PF.stat(f, 'powerups'); if (p.kind === 'multi') f.multi = 3; if (p.kind === 'fire') f.fire = 8; if (p.kind === 'shield') f.shield = true; blip(990, .12, 'triangle'); burst(p.x, p.y, '#ffe38a', 12); return false; } return true; });
+  });
+  rangs.forEach(r => {
+    r.t += dt; r.rot += .5;
+    if (!r.back && r.t > .55) r.back = true;
+    if (r.back) { const o = r.owner, d = Math.hypot(o.x - r.x, o.y - 14 - r.y) || 1; r.vx += ((o.x - r.x) / d * 12 - r.vx) * .12; r.vy += ((o.y - 14 - r.y) / d * 12 - r.vy) * .12; if (d < 22 || !o.alive) { r.dead = true; if (o.alive && r.main) { o.has = true; blip(520, .05, 'triangle', .04); o.squash = 2; for (let k = 0; k < 7; k++) { const a = k * .9; parts.push({ x: o.x, y: o.y - 30, vx: Math.cos(a) * 2.2, vy: Math.sin(a) * 2.2 - 1, life: .45, c: k % 2 ? '#fff6a8' : '#ffffff', r: 2.5 }); } } } }
+    const nx = r.x + r.vx, ny = r.y + r.vy;
+    if (!r.back || r.fire) { if (solid(nx, r.y)) { r.vx *= -1; burst(r.x, r.y, '#fff', 3); } if (solid(r.x, ny)) { r.vy *= -1; burst(r.x, r.y, '#fff', 3); } }
+    r.x += r.vx; r.y += r.vy; rustleAt(r.x, r.y + 14); (r.trail = r.trail || []).push({ x: r.x, y: r.y, rot: r.rot }); if (r.trail.length > 5) r.trail.shift();
+    if (r.fire && Math.random() < .6) parts.push({ x: r.x, y: r.y, vx: 0, vy: -.5, life: .35, c: Math.random() < .5 ? '#ff8a3d' : '#ffd23f', r: 5 });
+    fighters.forEach(f => { if (f.alive && f !== r.owner && Math.hypot(f.x - r.x, f.y - 14 - r.y) < 22) { ko(f, r.owner); if (!r.fire) r.back = true; } });
+    if (r.t > 4) { r.dead = true; if (r.main) r.owner.has = true; }
+  });
+  rangs = rangs.filter(r => !r.dead);
+  parts.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += p.grav || 0; p.vx *= .95; p.life -= dt; }); parts = parts.filter(p => p.life > 0);
+  powerTimer -= dt; if (powerTimer < 0 && powers.length < 2 && powerSpots.length) { powerTimer = 6; const s = powerSpots[Math.floor(Math.random() * powerSpots.length)]; if (!powers.some(p => p.x === s.x && p.y === s.y)) powers.push({ ...s, kind: ['multi', 'fire', 'shield'][Math.floor(Math.random() * 3)], t: 0 }); }
+  powers.forEach(p => p.t += dt);
+  shake *= .85;
+  const alive = fighters.filter(f => f.alive), active = fighters.filter(f => !f.empty);
+  if (state === 'play' && active.length >= 2 && alive.length <= 1) { state = 'roundover'; roundOverT = 2.4; const w = alive[0]; if (w) { w.wins++; try { if (w.net && window.NET) NET.send(w.net, { type: 'win', wins: w.wins }); } catch (e) {} banner(`${w.spec.name} wins!`, w.wins >= 3 ? 'CHAMPION 🏆' : `${w.wins} / 3`); } else banner('Double KO!', ''); hud(); }
+  if (state === 'roundover') { roundOverT -= dt; if (roundOverT <= 0) { const champ = fighters.find(f => f.wins >= 3); if (champ && !window.PF_shown) { window.PF_shown = true; roundOverT = 8.5; PF.podium(fighters); } else { window.PF_shown = false; if (champ) { fighters.forEach(f => f.wins = 0); PF.reset(fighters); } round++; document.getElementById('seed').value = nextSeed(); startRound(); } } }
+}
+function nextSeed() { const s = document.getElementById('seed').value.replace(/-\d+$/, ''); return `${s || 'KOPI'}-${Math.floor(Math.random() * 90 + 10)}`; }
+
+// ---------- Render ----------
+function fit() {
+  const dpr = Math.min(devicePixelRatio || 1, 2); cv.width = innerWidth * dpr; cv.height = innerHeight * dpr;
+  const s = Math.min(innerWidth / (COLS * T + 120), innerHeight / (ROWS * T * .82 + 170)); view = { s: s * dpr, ox: (innerWidth * dpr - COLS * T * s * dpr) / 2, oy: (innerHeight * dpr - ROWS * T * .82 * s * dpr) / 2 + 30 * dpr };
+}
+addEventListener('resize', fit);
+const P = .82; // vertical squash for the 3/4 view
+function render(time) {
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.fillStyle = '#8fc7a0'; g.fillRect(0, 0, cv.width, cv.height);
+  const sx = (Math.random() - .5) * shake, sy = (Math.random() - .5) * shake;
+  const z = 1 + zoomP * .07; zoomP *= .9; const cx0 = cv.width / 2, cy0 = cv.height / 2;
+  g.setTransform(view.s * z, 0, 0, view.s * P * z, cx0 + (view.ox + sx * view.s - cx0) * z, cy0 + (view.oy + sy * view.s - cy0) * z);
+  drawFloor(g);
+  // power-ups (floor layer)
+  powers.forEach(p => { const b = Math.sin(p.t * 4) * 4; g.fillStyle = 'rgba(43,35,80,.18)'; g.beginPath(); g.ellipse(p.x, p.y + 6, 16, 6, 0, 0, 7); g.fill(); g.fillStyle = 'rgba(255,255,255,.85)'; g.beginPath(); g.arc(p.x, p.y - 18 + b, 17, 0, 7); g.fill(); g.font = '20px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText({ multi: '🪃', fire: '🔥', shield: '🛡️' }[p.kind], p.x, p.y - 18 + b); });
+  // drawables sorted by y: walls, rocks, fighters, decor
+  const items = [];
+  for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (grid[y][x]) items.push({ y: (y + 1) * T, draw: () => drawBlock(x, y, grid[y][x]) });
+  fighters.forEach(f => f.alive && items.push({ y: f.y, draw: () => drawFighterInWorld(f, time) }));
+  decor.forEach(d => items.push({ y: d.y, draw: () => drawDecor(d) }));
+  items.sort((a, b) => a.y - b.y).forEach(it => it.draw());
+  // boomerangs on top
+  rangs.forEach(r => { const tr = r.trail || []; tr.forEach((t, i) => { g.globalAlpha = (i + 1) / (tr.length + 1) * .35; drawWeapon(g, r.owner.spec.weapon.kind, r.owner.spec.weapon.color, t.x, t.y, t.rot, 1.1); }); g.globalAlpha = 1; });
+  rangs.forEach(r => { g.fillStyle = 'rgba(43,35,80,.18)'; g.beginPath(); g.ellipse(r.x, r.y + 18, 10, 4, 0, 0, 7); g.fill(); drawWeapon(g, r.owner.spec.weapon.kind, r.owner.spec.weapon.color, r.x, r.y, r.rot, 1.1); });
+  drawLife(g);
+  parts.forEach(p => { g.globalAlpha = Math.max(0, Math.min(1, p.life * 2)); g.fillStyle = p.c; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 7); g.fill(); }); g.globalAlpha = 1;
+  if (flash > .01) { g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = 'rgba(255,255,255,' + flash + ')'; g.fillRect(0, 0, cv.width, cv.height); flash *= .88; }
+}
+function drawFighterInWorld(f, time) {
+  const hid = inBush(f.x, f.y); if (hid) g.globalAlpha = .3;
+  g.fillStyle = 'rgba(43,35,80,.2)'; g.beginPath(); g.ellipse(f.x, f.y + 2, 18, 7, 0, 0, 7); g.fill();
+  if (f.shield) { g.strokeStyle = 'rgba(127,216,255,.8)'; g.lineWidth = 3; g.beginPath(); g.arc(f.x, f.y - 20, 30, 0, 7); g.stroke(); }
+  const moving = Math.hypot(f.vx, f.vy) > .5, bob = moving ? Math.abs(Math.sin(f.step)) * 3 : Math.sin(time / 400 + f.i) * 1.2;
+  drawFighter(g, f, f.x, f.y - bob, 1, { squash: (f.squash || 0) + (moving ? Math.sin(f.step * 2) * .25 : 0), face: f.dir.x < 0 ? -1 : 1, step: f.step, blink: (time / 120 + f.i * 7) % 30 < 1, mood: (state === 'roundover' && f.alive) ? 'happy' : rangs.some(r => r.owner !== f && Math.hypot(r.x - f.x, r.y - 14 - f.y) < 110) ? 'scared' : undefined });
+  if (f.has) drawWeapon(g, f.spec.weapon.kind, f.spec.weapon.color, f.x + (f.dir.x < 0 ? -20 : 20), f.y - 22 - bob, .4, .8);
+  g.font = '700 13px Fredoka'; g.textAlign = 'center'; g.fillStyle = '#fff'; g.strokeStyle = '#2b2350'; g.lineWidth = 3; if (!hid) { g.strokeText(f.spec.name, f.x, f.y - 62); g.fillText(f.spec.name, f.x, f.y - 62); } g.globalAlpha = 1;
+}
+
+// ---------- UI ----------
+function hud() {
+  const h = document.getElementById('hud'); h.innerHTML = '';
+  fighters.forEach(f => { if (f.empty) return;
+    const d = document.createElement('div'); d.className = 'pcard' + (f.alive ? '' : ' out');
+    const c = document.createElement('canvas'); c.width = 80; c.height = 80; const cg = c.getContext('2d'); cg.scale(2, 2); drawFighter(cg, f, 20, 36, .62, {});
+    d.appendChild(c); const t = document.createElement('div'); t.innerHTML = `${escapeHtml(f.spec.name)}<div class="pips">${[0, 1, 2].map(k => `<span class="pip ${k < f.wins ? 'on' : ''}"></span>`).join('')}</div>`; d.appendChild(t); h.appendChild(d);
+  });
+}
+let bannerTimer; function banner(t, sub) { const b = document.getElementById('banner'); document.getElementById('bannerT').innerHTML = `${escapeHtml(t)}<small>${escapeHtml(sub || '')}</small>`; b.classList.add('show'); clearTimeout(bannerTimer); bannerTimer = setTimeout(() => b.classList.remove('show'), 1600); }
+function startRound() { try { fighters.forEach(f => f.net && window.NET && NET.send(f.net, { type: 'round', n: round + 1 })); } catch (e) {} genArena(document.getElementById('seed').value || 'KOPI-42'); resetRound(); state = 'countdown'; clearInterval(window.__iv); let n = 3; banner(String(n), document.getElementById('seed').value); const iv = window.__iv = setInterval(() => { n--; blip(440 + (3 - n) * 120, .1, 'triangle'); if (n > 0) banner(String(n)); else { clearInterval(iv); if (state === 'countdown') { banner('FU!'); state = 'play'; } } }, 650); }
+document.getElementById('regen').onclick = () => startRound();
+document.getElementById('rand').onclick = () => { document.getElementById('seed').value = nextSeed(); startRound(); };
+
+
+// ---------- Hatching loader: wobbling egg, progress bar, fun status lines ----------
+const HATCH_MSGS = { fighter: ['🥚 Laying the egg…', '🔥 Preheating the oven…', '🍞 Kneading the dough…', '🎨 Painting the cheeks…', '👀 Gluing on the googly eyes…', '🪃 Teaching it to throw…', '😴 Waking it up…', '🥱 It\'s stretching…', '✨ Almost hatched!'],
+  arena: ['🗺️ Unrolling the map…', '🧱 Laying the bricks…', '🌵 Planting cacti…', '🌳 Growing the bushes…', '🐦 Inviting the pigeons…', '⛲ Filling the fountain…', '🧹 Sweeping the sand…', '✨ Opening the gates!'] };
+function hatchLoader(el, kind = 'fighter', expect = 8) {
+  el.innerHTML = `<div class="hatch"><div class="egg">${kind === 'fighter' ? '🥚' : '🏗️'}</div><div class="bar"><i></i></div><div class="msg"></div></div>`;
+  const egg = el.querySelector('.egg'), bar = el.querySelector('.bar i'), msg = el.querySelector('.msg'), msgs = HATCH_MSGS[kind], t0 = performance.now();
+  let i = 0; msg.textContent = msgs[0];
+  const iv = setInterval(() => {
+    const t = (performance.now() - t0) / 1000, p = 1 - Math.exp(-t / (expect * .55)); // eases toward ~97%, never claims done
+    bar.style.width = Math.min(97, p * 100) + '%';
+    const k = Math.min(msgs.length - 1, Math.floor(p * msgs.length)); if (k !== i) { i = k; msg.textContent = msgs[k]; blip(500 + k * 60, .05, 'triangle', .03); }
+    if (kind === 'fighter' && p > .75) { egg.classList.add('fast'); egg.textContent = '🐣'; }
+  }, 120);
+  return ok => { clearInterval(iv); bar.style.width = '100%'; egg.classList.remove('fast'); egg.textContent = ok ? (kind === 'fighter' ? '🐥' : '🎉') : '😵'; egg.classList.add('done'); };
+}
+
+// ---------- Pre-game flow: Arena → Fighter → VS ----------
+const $flow = () => document.getElementById('flow');
+const ARENA_IDEAS = ['hawker centre at night', 'bamboo temple garden', 'candy land picnic', 'void deck at dusk'];
+const FIGHTER_IDEAS = ['grumpy durian king', 'sleepy kaya toast', 'boba tea ninja', 'spicy chilli crab'];
+function steps(n) { return `<div class="steps">${['1 · Arena', '2 · Fighter', '3 · Fight!'].map((t, i) => `<span class="${i === n ? 'on' : ''}">${t}</span>`).join('')}</div>`; }
+function miniCanvas(spec, size = 110) { const c = document.createElement('canvas'); c.width = size * 2; c.height = size * 2; const cg = c.getContext('2d'); cg.scale(2, 2); drawFighter(cg, { spec, i: 0 }, size / 2, size * .86, size / 60, { face: 1 }); return c; }
+async function api(path, prompt) {
+  const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) });
+  if (!r.ok) throw new Error(r.status); return r.json();
+}
+function flowArena() {
+  $flow().innerHTML = `${steps(0)}<h1>PROMPT FU</h1><p>Make the arena. Make the fighter. Throw the boomerang.</p>
+    <div class="choices"><div class="choice" id="live"><span class="e">🌳</span><b>Live arena</b><small>Jump into today's seeded arena</small></div>
+    <div class="choice" id="mk"><span class="e">✨</span><b>Create arena</b><small>Describe it, Codex builds it</small></div></div>
+    <div class="chips" id="themes">${(window.ARENA_PRESETS || []).map((p, i) => `<button data-i="${i}">${['🍂', '🏜️', '🏮', '🎋', '🍭'][i] || '🌱'} ${p.name}</button>`).join('')}</div><div id="sub"></div>`;
+  document.querySelectorAll('#themes button').forEach(b => b.onclick = () => { Object.assign(THEME, ARENA_PRESETS[+b.dataset.i]); document.getElementById('seed').value = nextSeed(); genArena(document.getElementById('seed').value); resetRound(); blip(660, .08, 'triangle'); flowFighter(); });
+  document.getElementById('live').onclick = () => { blip(660, .08, 'triangle'); if (window.ARENA_PRESETS) { Object.assign(THEME, ARENA_PRESETS.find(p => p.name === 'Desert')); } genArena(document.getElementById('seed').value); resetRound(); flowFighter(); };
+  document.getElementById('mk').onclick = () => {
+    document.getElementById('sub').innerHTML = `<div class="prompt"><input id="ap" placeholder="e.g. hawker centre at night" autofocus><button id="ago">Build ✨</button></div>
+      <div class="chips">${ARENA_IDEAS.map(t => `<button data-t="${t}">${t}</button>`).join('')}</div><div id="astat"></div>`;
+    document.querySelectorAll('#sub .chips button').forEach(b => b.onclick = () => { document.getElementById('ap').value = b.dataset.t; });
+    document.getElementById('ago').onclick = buildArena; document.getElementById('ap').onkeydown = e => e.key === 'Enter' && buildArena();
+  };
+}
+async function buildArena() {
+  const p = document.getElementById('ap').value.trim() || ARENA_IDEAS[0], st = document.getElementById('astat');
+  const doneA = hatchLoader(st, 'arena');
+  try {
+    const t = await api('/api/arena', p); doneA(true); Object.assign(THEME, t); const seed = (t.seed || p).toString().toUpperCase().replace(/[^A-Z0-9]+/g, '-').slice(0, 14);
+    document.getElementById('seed').value = seed; genArena(seed); resetRound();
+    st.innerHTML = `<p>🌱 <b>${escapeHtml(t.name || p)}</b> is ready${t.fallback ? ' (offline recipe)' : ''}!</p><div class="row"><button class="go" id="next">Next: your fighter →</button></div>`;
+    document.getElementById('next').onclick = flowFighter;
+  } catch (e) { st.innerHTML = '<p>Kitchen\'s busy, using the live arena.</p><div class="row"><button class="go" id="next">Next →</button></div>'; document.getElementById('next').onclick = flowFighter; }
+}
+function flowFighter() {
+  $flow().innerHTML = `${steps(1)}<h1 style="font-size:52px">YOUR FIGHTER</h1><p>Describe any snack. Codex cooks it up.</p>
+    <div class="preview" id="pv"></div>
+    <div class="prompt"><input id="fp" placeholder="e.g. grumpy durian king"><button id="fgo">Cook ✨</button></div>
+    <div class="chips">${FIGHTER_IDEAS.map(t => `<button data-t="${t}">${t}</button>`).join('')}</div><div id="fstat"></div>
+    <div class="row" id="botpick" style="align-items:center"><b>🤖 Bots:</b>${[0, 1, 2, 3].map(n => `<button data-n="${n}" class="${n === BOTS ? 'on' : ''}">${n === 0 ? 'No bots' : n}</button>`).join('')}</div>
+    <div class="row"><button class="go" id="fight">FIGHT! ▶</button></div><div class="qrbox" id="qrbox"></div>`;
+  const pv = document.getElementById('pv'); pv.appendChild(miniCanvas(fighters[0].spec)); pv.insertAdjacentHTML('beforeend', `<b style="font:400 26px 'Titan One'">${escapeHtml(fighters[0].spec.name)}</b>`);
+  document.querySelectorAll('.chips button').forEach(b => b.onclick = () => { document.getElementById('fp').value = b.dataset.t; });
+  const cook = async () => {
+    const p = document.getElementById('fp').value.trim() || FIGHTER_IDEAS[0], st = document.getElementById('fstat');
+    const doneF = hatchLoader(st, 'fighter'); document.getElementById('fgo').disabled = true;
+    try { const spec = await api('/api/fighter', p); doneF(true); document.getElementById('fgo').disabled = false; spec.name = spec.name && spec.name.toLowerCase() !== p.toLowerCase() ? spec.name : p.split(' ').slice(-1)[0].replace(/^./, c => c.toUpperCase()); fighters[0].spec = spec; hud(); st.innerHTML = spec.catchphrase ? `<p>"${escapeHtml(spec.catchphrase)}"</p>` : ''; }
+    catch (e) { doneF(false); document.getElementById('fgo').disabled = false; st.innerHTML = '<p>Oven hiccup, try again!</p>'; return; }
+    pv.innerHTML = ''; pv.appendChild(miniCanvas(fighters[0].spec)); pv.insertAdjacentHTML('beforeend', `<b style="font:400 26px 'Titan One'">${escapeHtml(fighters[0].spec.name)}</b>`); blip(880, .12, 'triangle');
+  };
+  document.getElementById('fgo').onclick = cook; document.getElementById('fp').onkeydown = e => e.key === 'Enter' && cook();
+  document.querySelectorAll('#botpick button').forEach(b => b.onclick = () => { BOTS = +b.dataset.n; document.querySelectorAll('#botpick button').forEach(x => x.classList.toggle('on', x === b)); applySlots(); blip(600 + BOTS * 80, .05, 'triangle'); });
+  document.getElementById('fight').onclick = flowVersus;
+  if (window.NET && NET.qrCanvas) try { window.onFlowFighter && window.onFlowFighter(document.getElementById('qrbox')); } catch (e) {}
+}
+function flowVersus() {
+  document.getElementById('title').style.display = 'none';
+  const L = document.getElementById('vsL'), R = document.getElementById('vsR'), vs = document.getElementById('vsbig');
+  L.innerHTML = ''; R.innerHTML = '';
+  L.appendChild(miniCanvas(fighters[0].spec, 160)); L.insertAdjacentHTML('beforeend', `${escapeHtml(fighters[0].spec.name)}<small>YOU</small>`);
+  const bots = fighters.slice(1).filter(f => !f.empty); const row = document.createElement('div'); row.style.display = 'flex';
+  bots.forEach(b => { const c = miniCanvas(b.spec, 110); c.style.width = c.style.height = '110px'; row.appendChild(c); });
+  R.appendChild(row); R.insertAdjacentHTML('beforeend', bots.length ? `${bots.map(b => escapeHtml(b.spec.name)).join(' · ')}<small>${bots.some(b => b.net || b.human === 1) ? 'CHALLENGERS' : 'BOTS'}</small>` : `???<small>SCAN THE QR TO JOIN</small>`);
+  vs.classList.add('show'); blip(200, .3, 'sawtooth', .08);
+  setTimeout(() => { vs.classList.remove('show'); startRound(); }, 2200);
+}
+
+// roster on the title card
+fighters = DEFAULT_FIGHTERS.map((s, i) => makeFighter(s, i, i === 0 ? 0 : i === 1 ? 1 : null));
+fighters[1].human = null; // P2 is a bot until P2 presses a key
+addEventListener('keydown', e => { if (CONTROLS[1] && Object.values(CONTROLS[1]).includes(e.code) && fighters[1].human === null) { fighters[1].human = 1; fighters[1].empty = false; if (state === 'play' && !fighters[1].alive) { const s = spawns[1]; Object.assign(fighters[1], { x: s.x, y: s.y, alive: true, has: true }); } hud(); banner('P2 joined!', fighters[1].spec.name); } });
+// (title roster now drawn by the flow)
+if (window.ARENA_PRESETS) Object.assign(THEME, ARENA_PRESETS.find(p => p.name === 'Desert') || {}); document.getElementById('seed').value = 'SAND-42'; genArena('SAND-42'); resetRound(); fit();
+
+function loop(now) {
+  requestAnimationFrame(loop); // schedule first: a thrown error can never freeze the game again
+  const dt = Math.min(.033, (now - last) / 1000); last = now;
+  const safe = (name, fn) => { try { fn(); } catch (e) { if (!loop.err) { loop.err = 1; console.warn('loop', name, e); } } };
+  safe('idle', () => tickIdle(now)); safe('life', () => updateLife(dt, fighters, rangs));
+  if (state === 'play' || state === 'roundover') safe('update', () => { if (slowT > 0) { slowT -= dt; slowAcc += .25; if (slowAcc >= 1) { slowAcc -= 1; update(dt); } } else update(dt); });
+  safe('render', () => render(now));
+}
+// ---------- Attract mode: idle 20s -> bots-only demo behind a SCAN TO PLAY banner ----------
+document.head.insertAdjacentHTML('beforeend', '<style>#attractB{position:fixed;top:4%;left:50%;transform:translateX(-50%);z-index:70;pointer-events:none;font:700 clamp(28px,5vw,64px) Fredoka,sans-serif;color:#fff;background:#ff8a3d;border:5px solid #2b2350;border-radius:28px;padding:10px 34px;box-shadow:0 8px 0 rgba(43,35,80,.4);white-space:nowrap;animation:attp .9s ease-in-out infinite alternate}@keyframes attp{from{transform:translateX(-50%) scale(1)}to{transform:translateX(-50%) scale(1.1) rotate(-1.5deg)}}.joinqr.big{right:auto;left:50%;bottom:20px;transform:translateX(-50%);padding:14px;font-size:22px;z-index:70}.joinqr.big canvas{width:230px!important;height:230px!important}</style>');
+function tickIdle(now) {
+  for (const f of fighters) { const n = f.net && netIn[f.net]; if (n && (n.mx || n.my || n.throw || n.dash)) lastInput = now; }
+  if (attract) { if (fighters.some(f => f.net)) exitAttract(); return; }
+  if (now - lastInput > 20000 && !document.getElementById('vsbig').classList.contains('show') && (state === 'title' || state === 'play' || state === 'roundover')) enterAttract();
+}
+function enterAttract() {
+  if (attract) return; attract = true;
+  const ti = document.getElementById('title');
+  attractSave = { bots: BOTS, st: state, title: ti ? ti.style.display : '', f: fighters.map(f => ({ h: f.human, n: f.net })) };
+  if (ti) ti.style.display = 'none'; BOTS = 3; fighters.forEach(f => { f.human = null; f.net = null; f.wins = 0; });
+  let b = document.getElementById('attractB'); if (!b) { b = document.createElement('div'); b.id = 'attractB'; b.textContent = '📱 SCAN TO PLAY'; document.body.appendChild(b); } b.style.display = '';
+  document.getElementById('joinqr').classList.add('big');
+  startRound();
+}
+function exitAttract() {
+  if (!attract) return; attract = false; lastInput = performance.now();
+  const sv = attractSave; BOTS = sv.bots; fighters.forEach((f, i) => { f.human = sv.f[i].h; f.net = f.net || sv.f[i].n; f.wins = 0; });
+  document.getElementById('attractB').style.display = 'none'; document.getElementById('joinqr').classList.remove('big');
+  document.getElementById('banner').classList.remove('show'); clearInterval(window.__iv); slowT = 0;
+  { const ti = document.getElementById('title'); if (ti) ti.style.display = sv.title; }
+  if (sv.st === 'title') { state = 'title'; resetRound(); } else startRound();
+}
+['keydown', 'pointerdown', 'mousedown', 'touchstart'].forEach(ev => addEventListener(ev, () => { lastInput = performance.now(); if (attract) exitAttract(); }, true));
+if (location.search.includes('attract')) lastInput = -1e9;
+requestAnimationFrame(loop);
+if (location.search.includes('autoplay')) { document.getElementById('title').style.display = 'none'; startRound(); } else flowArena();
+
+// ---------- Phones (WebSocket room via js/net.js) ----------
+const netIn = {}; const ROOM = (new URLSearchParams(location.search).get('room') || Math.random().toString(36).slice(2, 6)).toUpperCase();
+if (window.NET) try {
+  const phoneUrl = NET.connect(null, ROOM);
+  const jq = document.getElementById('joinqr'); jq.appendChild(NET.qrCanvas(phoneUrl)); jq.insertAdjacentHTML('beforeend', `📱 Scan to join<br><span style="color:#ff8a3d">ROOM ${escapeHtml(ROOM)}</span>`);
+  window.onFlowFighter = box => { box.innerHTML = '<p><b>📱 Or join from your phone</b></p>'; box.appendChild(NET.qrCanvas(phoneUrl)); };
+  NET.onJoin((id, name) => {
+    const f = fighters.find(f => f.empty && f.human !== 1 && !f.net) || fighters.find(f => f.human === null && !f.net && f !== fighters[0]); if (!f) return NET.send(id, { type: 'state', msg: 'Room full (4 max), next round!' });
+    const wasEmpty = f.empty; f.net = id; f.empty = false; if (wasEmpty && state === 'play') { const s = spawns[f.i]; Object.assign(f, { x: s.x, y: s.y, alive: true, has: true }); } f.spec = Object.assign({}, f.spec, { name: (name || 'Snack').slice(0, 12) }); hud(); banner(`${f.spec.name} joined!`, '📱'); blip(990, .12, 'triangle');
+    NET.send(id, { type: 'state', msg: `You are ${f.spec.name}!` }); NET.send(id, { type: 'spec', spec: f.spec, name: f.spec.name, wins: f.wins });
+  });
+  NET.onInput((id, inp) => { netIn[id] = inp; });
+  NET.onLeave(id => { const f = fighters.find(f => f.net === id); if (f) { f.net = null; applySlots(); } delete netIn[id]; });
+  NET.onFighterPrompt(async (id, prompt) => {
+    if (!prompt) return; const f = fighters.find(f => f.net === id); if (!f) return;
+    NET.send(id, { type: 'state', msg: '🥚 Hatching your fighter…' });
+    try { const spec = await api('/api/fighter', prompt); spec.name = f.spec.name; f.spec = spec; hud(); banner(`${f.spec.name} hatched!`, prompt); NET.send(id, { type: 'state', msg: 'Fighter ready! 🎉' }); NET.send(id, { type: 'spec', spec: f.spec, name: f.spec.name, wins: f.wins }); } catch (e) { NET.send(id, { type: 'state', msg: 'Kitchen busy, using default' }); }
+  });
+} catch (e) { console.warn('net off', e); }
+
+window.PF = Object.assign(window.PF || {}, { THEME, fighters, genArena, setTheme: t => Object.assign(THEME, t), setFighter: (i, spec) => { fighters[i].spec = spec; hud(); } });
+</script>
+</body>
+</html>

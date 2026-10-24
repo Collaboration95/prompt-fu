@@ -1,0 +1,31 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{font-family:var(--font-sans,system-ui);margin:0;color:var(--foreground)}
+h3{margin:18px 0 6px;font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-foreground)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.c{border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;background:var(--card)}
+.c b{display:block;margin-bottom:4px}.c p{margin:0;font-size:13px;color:var(--muted-foreground)}
+.t{font-size:11px;margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}.t span{border-radius:99px;padding:2px 8px;background:var(--secondary)}
+.pick{border:2px solid var(--accent)}.pick b::after{content:" ★ pick";color:var(--accent);font-size:12px}
+</style></head><body>
+<h3>Demo impact</h3><div class="grid">
+<div class="c pick"><b>1 · Phone polish</b><p>Your fighter + name on the phone, "BONKED!" screen with respawn countdown, rumble on hit, round wins.</p><div class="t"><span>phone.html</span><span>~15 min</span></div></div>
+<div class="c"><b>2 · Hatch in the arena</b><p>Phone players' Codex fighters hatch from an egg on the big screen with a pop.</p><div class="t"><span>index.html</span><span>~10 min</span></div></div>
+<div class="c pick"><b>3 · Game feel / juice</b><p>Slow-mo final KO, boomerang trails + catch bounce, faces react (scared / happy).</p><div class="t"><span>index.html</span><span>~15 min</span></div></div>
+<div class="c pick"><b>4 · Awards podium</b><p>End-of-match podium with funny Codex-written awards for everyone ("Bush goblin").</p><div class="t"><span>js/awards.js + server</span><span>~15 min</span></div></div>
+<div class="c"><b>5 · Music + SFX</b><p>Web Audio chiptune loop, better throw / catch / bonk sounds. No files.</p><div class="t"><span>js/audio.js</span><span>~10 min</span></div></div>
+</div>
+<h3>Gameplay depth</h3><div class="grid">
+<div class="c"><b>6 · More power-ups</b><p>Giant boomerang, speed boots, decoy bush, teleport.</p><div class="t"><span>~15 min</span></div></div>
+<div class="c"><b>7 · Interactive arena</b><p>Breakable crates, fountain knock-back, scattering pigeons.</p><div class="t"><span>~20 min</span></div></div>
+<div class="c"><b>8 · Bot personalities</b><p>Shy / sneaky / chaotic bots that are fun to watch.</p><div class="t"><span>~10 min</span></div></div>
+</div>
+<h3>Creation (the "you make everything" pitch)</h3><div class="grid">
+<div class="c"><b>9 · Prompted weapons</b><p>"Chopsticks of fury" changes how the weapon looks and behaves: speed, curve, bounce.</p><div class="t"><span>~20 min</span></div></div>
+<div class="c"><b>10 · Richer prompted arenas</b><p>Codex also picks the layout template + decor, not only the colours.</p><div class="t"><span>~10 min</span></div></div>
+<div class="c"><b>11 · Hall of Snacks</b><p>Gallery of every fighter/arena created; re-pick them later.</p><div class="t"><span>~20 min</span></div></div>
+</div>
+<h3>Reliability for judging</h3><div class="grid">
+<div class="c"><b>12 · Rate limit + instant presets</b><p>Prompt cooldown so Codex can't be spammed; instant preset fighters if it's slow.</p><div class="t"><span>server</span><span>~10 min</span></div></div>
+<div class="c pick"><b>13 · Attract mode</b><p>Idle screen keeps bots fighting with a big "Scan to play" banner.</p><div class="t"><span>index.html</span><span>~10 min</span></div></div>
+</div>
+</body></html>

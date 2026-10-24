@@ -1,0 +1,21 @@
+# Frozen deployment and local hackathon material (never publish).
+/site/
+/docs/research/
+/docs/DEVLOG.md
+/sites-shell/scripts/
+JUDGE-SIGNALS.md
+
+# Credentials, machine state, and generated output.
+.env
+.env.*
+*.env
+*.pem
+*.key
+.backend-token
+.DS_Store
+node_modules/
+dist/
+coverage/
+test-results/
+*.log
+*.tar.gz

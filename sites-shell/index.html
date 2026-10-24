@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Prompt Fu</title>
+<link href="https://fonts.googleapis.com/css2?family=Titan+One&family=Fredoka:wght@600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #f2d49b; font-family: Fredoka, system-ui, sans-serif; color: #2b2350; }
+  iframe { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+  #boot { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; }
+  #boot h1 { margin: 0; font: 400 64px "Titan One"; color: #ff8a3d; -webkit-text-stroke: 3px #2b2350; paint-order: stroke fill; text-shadow: 0 6px 0 #2b2350; }
+  #boot p { font-size: 18px; } .egg { font-size: 54px; display: inline-block; animation: w .5s ease-in-out infinite; } @keyframes w { 50% { transform: rotate(12deg); } }
+</style>
+</head>
+<body>
+<div id="boot"><div><div class="egg">🥚</div><h1>PROMPT FU</h1><p id="msg">Waking up the arena…</p></div></div>
+<script>
+// Thin Sites shell: the live game is served by the backend (address comes from Sites env via /api/config),
+// so game updates ship from the backend without republishing this Site.
+(async () => {
+  const msg = document.getElementById('msg');
+  try {
+    const c = await (await fetch('/api/config', { cache: 'no-store' })).json();
+    const base = c.ws.replace(/^ws/, 'http').replace(/\/ws$/, '');
+    const f = document.createElement('iframe');
+    f.src = base + '/' + location.search;
+    f.allow = 'autoplay; fullscreen; clipboard-write';
+    let loaded = false;
+    f.onload = () => { loaded = true; document.getElementById('boot').remove(); f.focus(); };
+    document.body.appendChild(f);
+    setTimeout(() => { if (!loaded) msg.textContent = 'The game server is napping 😴 Try again in a moment.'; }, 12000);
+  } catch (e) { msg.textContent = 'The game server is napping 😴 Try again in a moment.'; }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "name": "prompt-fu",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A prompt-powered couch party game with food fighters and phone controllers.",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node game/server/server.mjs",
+    "check": "node scripts/check.mjs",
+    "test": "node --test test/*.test.mjs",
+    "test:browser": "playwright test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Collaboration95/prompt-fu.git"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1"
+  }
+}

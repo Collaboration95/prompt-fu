@@ -1,0 +1,9 @@
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './test/browser',
+  workers: 1,
+  timeout: 30_000,
+  reporter: 'list',
+  use: { browserName: 'chromium', headless: true },
+});
