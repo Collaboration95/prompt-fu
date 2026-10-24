@@ -1,16 +1,49 @@
-# Prompt Fu 🪃
+<img src="docs/art/vock-happy.png" width="128" height="128" alt="Vock, the avocado fighter">
 
-Describe a snack. Make it a fighter. Throw a boomerang at your friends.
+# Prompt Fu: a food fight you can prompt
 
-Prompt Fu is a couch party game built for the AI Grand Prix. One screen runs the arena; phones become controllers by scanning a QR code. Fighters and arenas can come from prompts, with deterministic recipes when AI generation is unavailable.
+**AI Grand Prix · A couch party game for one big screen and your phones**
 
-[Hosted demo](https://prompt-fu-arena.gpyes44.chatgpt.site) · [Architecture](docs/ARCHITECTURE.md) · [Development](CONTRIBUTING.md) · [Next steps](docs/ROADMAP.md)
+Describe a snack. Make it a fighter. Throw a boomerang at your friends. **Codex turns your words into a fighter or an arena, and the game brings the recipe to life.** Everyone shares the same screen. Phones become controllers. First to three round wins gets the podium and a little roast.
 
-The hosted demo depends on a separately running backend. To play independently, run your own copy below.
+[**Play Prompt Fu ↗**](https://prompt-fu-arena.gpyes44.chatgpt.site)
+
+![Prompt Fu, with Vock, Donny, Shari and Greg](docs/slides/01.jpg)
+
+## Slides
+
+[**Open the slides ↗**](https://collaboration95.github.io/prompt-fu/slides.html) · [Browse the slide images](docs/slides/) · [HTML source](docs/slides.html)
+
+Eight slides, using the game's own food fighters, arenas and colors. Use the arrow keys, swipe, or tap the navigation buttons. Press **F** for fullscreen.
+
+## How it works
+
+1. **Make the arena.** Pick a preset or describe a place. The prompt sets the theme; the seed sets the layout. Desert, Autumn Dojo, Hawker Night, Bamboo Garden and Candy Land are ready to go.
+2. **Make the fighter.** Describe your snack. Codex returns a JSON recipe for its shape, colors, expression, weapon and catchphrase. The game draws it in code, with 18 food archetypes to build on.
+3. **Join the brawl.** Scan the host screen's QR code, enter your name and take a fighter slot. Your phone shows your own fighter and win pips. Move with the right joystick; throw and dash with the buttons on the left.
+4. **Settle it.** Boomerangs come back. Bushes hide you. Multi-shot, fire and shield power-ups change the fight. Bots fill the configured empty slots, and the first fighter to three round wins takes the podium.
+5. **Have another round.** Match awards give everyone a playful title. Leave the screen idle and the bots keep the arena moving under a “Scan to play” banner.
+
+![A round in the Desert arena](docs/images/gameplay.png)
+
+| A fighter from a sentence | Your phone, your fighter |
+| --- | --- |
+| ![The fighter recipe, illustrated by Greg](docs/slides/03.jpg) | ![Donny's phone controller](docs/images/controller.png) |
+
+## Inside the arena
+
+![Prompt Fu architecture: the hosted shell opens the host game, phones connect through a Node relay, and Codex supplies JSON recipes](docs/images/architecture.png)
+
+[**Explore the architecture ↗**](https://collaboration95.github.io/prompt-fu/architecture.html) · [Editable HTML source](docs/architecture.html)
+
+- **The host runs the fight.** Its Canvas game owns movement, collisions, bots and scoring. Phones send joystick and button input about 20 times per second through a WebSocket relay.
+- **One Node process connects everyone.** It serves the game, routes room messages and handles the fighter, arena and awards endpoints. The server has no runtime npm dependencies.
+- **AI makes the recipes.** The backend runs Codex in a read-only generation process, then rebuilds its JSON from allowed fields. Deterministic recipes keep creation working when generation is unavailable. AI stays outside the gameplay loop.
+- **Sites is the front door.** The published ChatGPT Site loads the backend-served game in an iframe. The same backend serves the phone controllers.
 
 ## Run it
 
-Requires **Node.js 20 or newer**. The server has no runtime npm dependencies and needs no build step.
+Requires **Node.js 20+**. No install or build step is needed to run the game.
 
 ```sh
 gh repo clone Collaboration95/prompt-fu
@@ -18,25 +51,15 @@ cd prompt-fu
 npm start
 ```
 
-Open **http://127.0.0.1:8790**. Pick an arena, choose a fighter, and press **FIGHT!** You can play with the built-in fighters and bots immediately. An installed, authenticated Codex CLI enables prompt generation; without it, the server returns deterministic fallback specs.
+Open **http://127.0.0.1:8790**. An installed, authenticated Codex CLI enables prompt generation. Built-in fighters, bots and fallback recipes work without it.
 
-For phones on the same network, bind the server to your network interface:
+For phones on the same network:
 
 ```sh
 HOST=0.0.0.0 npm start
 ```
 
-Open `http://<your-computer-LAN-IP>:8790` on the host screen, then scan its QR code. Use the LAN address on the host too: a QR code generated from `localhost` points phones at themselves. If the network blocks device-to-device connections, use a network that permits them.
-
-Already using port 8790? Run `PORT=8791 npm start`.
-
-## Play
-
-- Choose a preset arena or describe one. The seed controls the layout.
-- Choose a built-in fighter or prompt your own snack. There are 18 code-drawn food archetypes.
-- Up to four fighter slots share the arena. Phones take available slots; bots fill the remaining configured slots.
-- Throw, dash, hide in bushes, and collect multi-shot, fire, and shield power-ups. First to three round wins gets the podium.
-- Leave the game idle for 20 seconds to see a bot demonstration.
+Open `http://<your-computer-LAN-IP>:8790` on the host screen before scanning its QR code. That makes the QR point to an address the phones can reach. Use `PORT=8791 npm start` if port 8790 is already occupied.
 
 | Controller | Move | Throw | Dash |
 | --- | --- | --- | --- |
@@ -44,46 +67,21 @@ Already using port 8790? Run `PORT=8791 npm start`.
 | Keyboard player 2 | Arrow keys | K | L |
 | Phone | Right joystick | Left THROW button | Left DASH button |
 
-Phones work in portrait and landscape; landscape gives the controls more room. The host arena is intended for a larger screen.
+## Repo map
 
-![Phone controller in landscape](docs/images/phone-landscape.png)
-
-*Local Chromium capture with touch input emulation.*
-
-## How it works
-
-The host browser runs movement, collisions, bots, scoring, and drawing. A small Node server serves the game, relays WebSocket messages between the host and phones, and runs optional AI generation. AI stays out of the gameplay loop.
-
-The published ChatGPT Site is an iframe shell pointing at that backend. Publishing this repository does not deploy or change the hosted Site.
-
-| Path | Purpose |
+| Path | What's there |
 | --- | --- |
 | `game/index.html` | Host flow, game simulation and rendering |
-| `game/phone.html` | Phone join screen, joystick, buttons and feedback |
-| `game/js/` | Arena generation, fighter drawing, networking and podium |
-| `game/server/` | Static server, WebSocket relay and generation routes |
+| `game/phone.html` | Phone join screen, controls and feedback |
+| `game/js/` | Seeded arenas, fighter drawing, networking and podium |
+| `game/server/` | Static files, WebSocket relay and generation routes |
 | `game/CONTRACT.md` | Fighter and arena JSON shapes |
+| `docs/slides.html` | The illustrated pitch deck |
+| `docs/architecture.html` | The visual architecture |
+| `docs/art/`, `docs/images/` | Original game-rendered characters and screenshots |
 | `sites-shell/` | Reference source for the hosted iframe shell |
-| `test/` | Dependency-free server and relay checks |
-| `docs/` | Architecture, verification and next steps |
+| `test/` | Server and browser checks |
 
-## Development
+---
 
-```sh
-npm run check
-npm test
-```
-
-Tests start their own server on an ephemeral port and deliberately use an unavailable AI executable. They do not need credentials or contact a live AI service. CI runs these checks on Node 20, 22 and 24, plus Chromium touch-controller checks on Node 24. Playwright is an optional development dependency; see [CONTRIBUTING.md](CONTRIBUTING.md) for browser checks.
-
-## Current limits
-
-This is a working hackathon prototype. Rooms live in memory, the host browser must stay open, and there is no host migration or persistent leaderboard. Rooms and generation endpoints have no authentication or per-user rate limits; public hosting needs further hardening. The two-generation concurrency cap is not a usage quota.
-
-The QR library loads from jsDelivr and fonts load from Google Fonts. Local play without AI is supported; fully offline QR generation is not yet bundled. The generator retains event-specific model names and CLI options, so other installations may use fallbacks until that adapter is made configurable.
-
-## Credits and licensing
-
-Inspired by *Boomerang Fu*. Fighters and arenas are drawn in code. Prompt Fu is an independent project and is not affiliated with Boomerang Fu.
-
-No open-source license has been selected for this initial publication. The package is marked private to prevent accidental npm publication.
+Inspired by *Boomerang Fu*. The food fighters and arenas are drawn in code. Prompt Fu is an independent project, built for AI Grand Prix.
